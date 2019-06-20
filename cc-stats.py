@@ -7,18 +7,19 @@
 import requests
 import sys
 import smtplib
+import collections
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 
 assets = {
-    'BTC': 2,
-    'ETH': 1,
-    'MNR': 10
+    'XRP': 20.57,
+    'STRAT': 29.99,
           }
 
-
-def sendmail(msg):
-    msg = "Subject: Latest coin prices" + "\n\n" + msg
-    server = smtplib.SMTP('smtp.somehost.com', 25)
-    server.sendmail('noreply@yourdomain.org', 'john@doe.net', msg)
+smtpserver = 'smtp.somehost.com'
+smtpport = 25
+sender = 'noreply@yourdomain.org'
+rcpt = 'john@doe.net'
 
 
 def cryptodata(assets):
@@ -56,13 +57,32 @@ def cryptodata(assets):
 
 # Run it
 allcrypto = cryptodata(assets)
+allcrypto = collections.OrderedDict(sorted(allcrypto.items()))
 
-msg = "{0:8}{1:<8}\t{2}\t{3}\n".format("Coin", "Qty", "Price", "Totals (USD)")
+msg = MIMEMultipart('alternative')
+msg['Subject'] = 'Latest coin prices'
+msg['From'] = sender
+msg['To'] = rcpt
 
+msgbody = """\
+<html>
+  <head></head>
+  <body style="font-family: arial;font-style:normal;font-size:12px">
+    <p>Crypto Summary</p>
+    <table style="font-family: arial;font-style:normal;font-size:12px;text-align:left">
+      <tr><th style="text-align:left">Coin</th><th style="text-align:left">Qty</th><th style="text-align:left">Price</th><th style="text-align:left">Totals (USD)</th></tr>
+"""
+
+totalval = 0
 for coin, coinitems in allcrypto.items():
     price = coinitems['quote']['USD']['price']
     assetval = price*assets[coin]
-    msg += "{0:8}{1:<8}\t{2:.2f}:\t{3:.2f}\n".format(coin, assets[coin], price, assetval)
+    totalval += assetval
+    msgbody += "      <tr><td>{0}</td><td>{1}</td><td>{2:.2f}</td><td>{3:.2f}</td></tr>\n".format(coin, assets[coin], price, assetval)
 
-sendmail(msg)
+msgbody += "    </table>\n    <br>\n    <p>Total value: {}<p>\n  </body>\n</html>\n".format(round(totalval, 2))
+msg.attach(MIMEText(msgbody, 'html'))
+
+server = smtplib.SMTP(smtpserver, smtpport)
+server.sendmail(sender, rcpt, msg.as_string())
 
