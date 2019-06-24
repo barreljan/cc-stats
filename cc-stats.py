@@ -88,7 +88,7 @@ def process_data():
     emailmsgbody += "text-align:left\">\n\t\t\t<tr><th style=\"text-align:left\">Coin</th><th "
     emailmsgbody += "text-align:left\">Qty</th><th style=\"text-align:left\">Price</th><th style=\"text-align:left\">"
     emailmsgbody += "(USD)</th></tr>\n"
-    screenmsg = "{}\n\nCoin\t\tQty\t\tPrice\t\tTotal (USD)".format(emailmsg['Subject'])
+    screenmsg = "{}\n\nCoin\t\tQty\t\tPrice\t\tTotal (USD)\n".format(emailmsg['Subject'])
 
     totalval = 0
     for coin, coinitems in allcrypto.items():
