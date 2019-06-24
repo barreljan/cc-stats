@@ -23,7 +23,6 @@ smtpserver = 'smtp.somehost.com'
 smtpport = 25
 sender = 'noreply@yourdomain.org'
 rcpt = 'john@doe.net'
-server = smtplib.SMTP(smtpserver, smtpport)
 
 
 def argparse():
@@ -89,7 +88,7 @@ def process_data():
     emailmsgbody += "text-align:left\">\n\t\t\t<tr><th style=\"text-align:left\">Coin</th><th "
     emailmsgbody += "text-align:left\">Qty</th><th style=\"text-align:left\">Price</th><th style=\"text-align:left\">"
     emailmsgbody += "(USD)</th></tr>\n"
-    screenmsg = "{}\n\n".format(emailmsg['Subject'])
+    screenmsg = "{}\n\nCoin\t\tQty\t\tPrice\t\tTotal (USD)".format(emailmsg['Subject'])
 
     totalval = 0
     for coin, coinitems in allcrypto.items():
@@ -116,6 +115,7 @@ if __name__ == '__main__':
     output = process_data()
 
     if to_mail:
+        server = smtplib.SMTP(smtpserver, smtpport)
         server.sendmail(sender, rcpt, output.as_string())
     else:
         print(output)
