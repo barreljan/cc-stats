@@ -87,7 +87,7 @@ def process_data():
     emailmsgbody += "\t\t<p>Crypto Summary</p>\n\t\t<table style=\"font-family: arial;font-style:normal;font-size:12px;"
     emailmsgbody += "text-align:left\">\n\t\t\t<tr><th style=\"text-align:left\">Coin</th><th "
     emailmsgbody += "text-align:left\">Qty</th><th style=\"text-align:left\">Price</th><th style=\"text-align:left\">"
-    emailmsgbody += "(USD)</th></tr>\n"
+    emailmsgbody += "Totals (USD)</th></tr>\n"
     screenmsg = "{}\n\nCoin\t\tQty\t\tPrice\t\tTotal (USD)\n".format(emailmsg['Subject'])
 
     totalval = 0
