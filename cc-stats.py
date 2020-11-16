@@ -1,6 +1,7 @@
 #!/usr/local/bin/python3.7
 #
 # Created 9-Feb 2019
+# Update 16-11-2020
 # @author: bartjan@pc-mania.nl
 # https://github.com/barreljan/cc-stats
 #
@@ -14,15 +15,17 @@ from email.mime.text import MIMEText
 # Assets dict: TOKEN as Key, int as Value
 # TOKEN must be the official token code used on the CMC website
 assets = {
-    'XRP': 20.57,
+    'XRP': 21.57,
     'STRAT': 29.99
-          }
+}
 
 to_mail = False
-smtpserver = 'smtp.somehost.com'
-smtpport = 25
-sender = 'noreply@yourdomain.org'
-rcpt = 'john@doe.net'
+
+SMTP_SERVER = "smtp.somehost.com"
+SMTP_PORT = 25
+SENDER = "noreply@yourdomain.org"
+RCPT = "john@doe.net"
+API_KEY = "your Coinmarketcap Pro key"
 
 
 def argparse():
@@ -30,84 +33,83 @@ def argparse():
 
     if len(sys.argv) >= 2:
         if sys.argv[1] == '-h' or sys.argv[1] == '--help':
-            print("Syntax is {0} -m or --mail\nDefault output is to screen\n".format(sys.argv[0]))
+            print(f"Syntax is {sys.argv[0]} -m or --mail\nDefault output is to screen\n")
             sys.exit()
         elif sys.argv[1] == '-m' or sys.argv[1] == '--mail':
             to_mail = True
 
 
-def cryptodata(_assets):
-    # Generate a string of coins pieced together for the API call
-    coins = str()
-    for coin, qty in _assets.items():
-        if coins is "":
-            coins += coin
-        else:
-            coins += ",{}".format(coin)
+def get_crypto_data(_assets):
+    """
+    Function to make the request to the remote server with given assets.
 
-    link = 'https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?symbol={}'.format(coins)
-    api_key = 'your Coinmarketcap Pro key'
+    :param _assets: dict containing assets
+    :return: json
+    """
+    # Generate a string of coins pieced together for the API call
+    coins = ",".join(assets)
+
+    link = f"https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?symbol={coins}"
     headers = {
-        'X-CMC_PRO_API_KEY': api_key,
+        'X-CMC_PRO_API_KEY': API_KEY,
         'Accept': 'application/json'
     }
 
     # Do the call
     try:
         data = requests.get(link, headers=headers)
-    except Exception:
-        print("Could not connect")
-        sys.exit(1)
+    except (requests.ConnectionError, requests.ConnectTimeout, requests.TooManyRedirects, requests.HTTPError):
+        raise SystemExit("Could not connect")
 
     # Return the data
     try:
-        jdata = data.json()
-        if jdata['data']:
-            return jdata['data']
-        elif not jdata['data']:
-            raise KeyError('No data returned')
+        json_data = data.json()
+        return json_data['data']
     except KeyError:
-        print("API Call went wrong, no usable data returned")
-        sys.exit(1)
+        raise SystemExit("API Call went wrong, no usable data returned")
 
 
 def process_data():
+    """
+    Function to present the data in a formatted manner, either on screen or via (html) email.
+    """
     global to_mail
 
     # Retrieve coin info for the available assets
-    allcrypto = cryptodata(assets)
-    allcrypto = collections.OrderedDict(sorted(allcrypto.items()))
+    all_crypto = get_crypto_data(assets)
+    all_crypto = collections.OrderedDict(sorted(all_crypto.items()))
 
     # Generate the output
-    emailmsg = MIMEMultipart('alternative')
-    emailmsg['Subject'] = 'Latest coin prices'
-    emailmsg['From'] = sender
-    emailmsg['To'] = rcpt
-    emailmsgbody = "<html>\n\t<head></head>\n\t<body style=\"font-family: arial;font-style:normal;font-size:12px\">\n"
-    emailmsgbody += "\t\t<p>Crypto Summary</p>\n\t\t<table style=\"font-family: arial;font-style:normal;font-size:12px;"
-    emailmsgbody += "text-align:left\">\n\t\t\t<tr><th style=\"text-align:left\">Coin</th><th "
-    emailmsgbody += "text-align:left\">Qty</th><th style=\"text-align:left\">Price</th><th style=\"text-align:left\">"
-    emailmsgbody += "Totals (USD)</th></tr>\n"
-    screenmsg = "{}\n\nCoin\t\tQty\t\tPrice\t\tTotal (USD)\n".format(emailmsg['Subject'])
+    email_msg = MIMEMultipart('alternative')
+    email_msg['Subject'] = "Latest coin prices"
+    email_msg['From'] = SENDER
+    email_msg['To'] = RCPT
+    email_msg_body = """
+        <html>\n\t<head></head>\n\t<body style=\"font-family: arial;font-style:normal;font-size:12px\">\n
+        \t\t<p>Crypto Summary</p>\n\t\t<table style=\"font-family: arial;font-style:normal;font-size:12px;
+        text-align:left\">\n\t\t\t<tr><th style=\"text-align:left\">Coin</th><th 
+        text-align:left\">Qty</th><th style=\"text-align:left\">Price</th><th style=\"text-align:left\">
+        Totals (USD)</th></tr>\n"""
+    screen_msg = f"{email_msg['Subject']}\n\nCoin\t\tQty\t\tPrice\t\tTotal (USD)\n"
 
-    totalval = 0
-    for coin, coinitems in allcrypto.items():
-        price = coinitems['quote']['USD']['price']
-        assetval = price*assets[coin]
-        totalval += assetval
-        emailmsgbody += "\t\t\t<tr><td>{0}</td><td>{1}</td><td>{2:.2f}</td><td>{3:.2f}</td></tr>\n"\
-            .format(coin, assets[coin], price, assetval)
-        screenmsg += "{0}\t\t{1}\t\t{2:.2f}\t\t{3:.2f}\n".format(coin, assets[coin], price, assetval)
+    total_value = 0
+    for coin, coin_items in all_crypto.items():
+        price = coin_items['quote']['USD']['price']
+        asset_value = price * assets[coin]
+        total_value += asset_value
+        email_msg_body += f"""
+            \t\t\t<tr><td>{coin}</td><td>{assets[coin]}</td><td>{price:.2f}</td><td>{asset_value:.2f}</td></tr>\n"""
+        screen_msg += f"{coin}\t\t{assets[coin]}\t\t{price:.2f}\t\t{asset_value:.2f}\n"
 
-    emailmsgbody += "\t\t</table>\n\t\t<br>\n\t\t<p>Total value: {}<p>\n\t</body>\n</html>\n".format(round(totalval, 2))
-    emailmsg.attach(MIMEText(emailmsgbody, 'html'))
-    screenmsg += "\nTotal Value: {}".format(round(totalval, 2))
+    email_msg_body += f"\t\t</table>\n\t\t<br>\n\t\t<p>Total value: {round(total_value, 2)}<p>\n\t</body>\n</html>\n"
+    email_msg.attach(MIMEText(email_msg_body, 'html'))
+    screen_msg += f"\nTotal Value: {round(total_value, 2)}"
 
     # Return output
     if to_mail:
-        return emailmsg
+        return email_msg
     else:
-        return screenmsg
+        return screen_msg
 
 
 if __name__ == '__main__':
@@ -115,8 +117,8 @@ if __name__ == '__main__':
     output = process_data()
 
     if to_mail:
-        server = smtplib.SMTP(smtpserver, smtpport)
-        server.sendmail(sender, rcpt, output.as_string())
+        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
+        server.sendmail(SENDER, RCPT, output.as_string())
     else:
         print(output)
 
