@@ -63,10 +63,13 @@ def get_crypto_data(_assets):
 
     # Return the data
     try:
-        json_data = data.json()
-        return json_data['data']
-    except KeyError:
-        raise SystemExit("API Call went wrong, no usable data returned")
+        jdata = data.json()
+        if jdata['status']['error_code'] == 400:
+            raise KeyError(jdata['status']['error_message'])
+        else:
+            return jdata['data']
+    except KeyError as e:
+        raise SystemExit(f"API Call went wrong, no usable data returned: {e}")
 
 
 def process_data():
