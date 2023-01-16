@@ -1,0 +1,16 @@
+email_settings:
+    # For the email report
+    smtp_server: smtp.somehost.com
+    smtp_port: 25
+    sender: noreply@yourdomain.org
+    rcpt: john@doe.net
+
+cmc:
+    # Coinmarketcap API-key
+    api_key: 11223344-c123-1a23-1b2e-f123456f78b9
+
+assets:
+    # Assets in capital
+    ETH: 1
+    USDT: 200.5
+
