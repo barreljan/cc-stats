@@ -15,15 +15,18 @@ from yaml import load, dump
 from yaml import Loader, Dumper
 
 path = os.path.dirname(__file__)
+if not path:
+    path = "."
 
 try:
     if os.path.exists(f'{path}/cc-stats.yml'):
         stream = open(f'{path}/cc-stats.yml', 'r')
         config = load(stream, Loader=Loader)
-        assets = config['assets']
+        stream.close()
     else:
         raise SystemExit('No \'cc-stats.yml\' found, exiting...')
-    
+
+    assets = config['assets']
     smtp_server = config['email_settings']['smtp_server']
     smtp_port = config['email_settings']['smtp_port']
     sender = config['email_settings']['sender']
@@ -33,7 +36,10 @@ except KeyError:
     raise SystemExit('There is something wrong with the config\nSee the \'cc-stats.yml_example\'')
 
 
-def parse_args() -> object:
+def parse_args():
+    """
+    Parses the given arguments and returns the class object.
+    """
     parser = argparse.ArgumentParser()
     parser.add_argument('-m', '--mail', dest='to_mail', action='store_true',
                         help='Sends the result in a (HTML) email')
@@ -74,7 +80,7 @@ def get_crypto_data(_assets: dict) -> dict:
         raise SystemExit(f'API Call went wrong, no usable data returned: {e}')
 
 
-def report_data(data) -> tuple[str, str]:
+def report_data(data) -> tuple:
     """
     Function to present the data in a formatted manner, either on screen or via (html) email.
 

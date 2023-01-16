@@ -14,7 +14,7 @@ You can register yourself to https://pro.coinmarketcap.com for
 a free key. You can spend up to 10k a month in requests.
 
 ## How to use
-
+Install dependecies: `python3 -m pip install -r requirements.txt`
 Copy the `cc-stat.yml_example` to `cc-stats.yml`.
 
 In this `cc-stats.yml` file you can add your assets, as a simple list.
